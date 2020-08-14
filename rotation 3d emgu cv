@@ -1,0 +1,113 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using Emgu.CV;
+
+using Emgu.CV.CvEnum;
+using Emgu.CV.Structure;
+using Emgu.CV.Util;
+
+namespace ConsoleApp8
+{
+    class Program
+    {
+
+        static void Main(string[] args)
+        {
+
+            Image<Bgr, byte> img = new Image<Bgr, byte>(@"C:\Users\iP\Desktop\po\ahly.jpg");
+            img = img.Resize(1.5, Inter.Linear);
+
+            Image<Bgr, byte> res = new Image<Bgr, byte>(img.Size);
+
+            double alpha, beta, gamma, x = 0, y = 0, z = 0;
+
+            double w = (double)img.Cols;
+            double h = (double)img.Rows;
+
+            // Projection 2D -> 3D matrix
+            Matrix<double> a1 = new Matrix<double>(new double[4, 3]{
+                {1, 0, -w/2 },
+                { 0, 1, -h/2 },
+                { 0, 0, 0 },
+                { 0, 0, 1 },
+            });
+
+            // Rotation matrices around the X, Y, and Z axis
+            Matrix<double> rx = new Matrix<double>(new double[4, 4]{
+                {1,  0, 0, 0},
+                { 0, 1, 0, 0 },
+                { 0, 0,  1, 0},
+                { 0, 0, 0, 1},
+            });
+
+            Matrix<double> ry = new Matrix<double>(new double[4, 4]{
+                {1, 0, 0, 0},
+                { 0,1 , 0, 0 },
+                { 0, 0, 1, 0},
+                { 0, 0,  0, 1},
+            });
+
+            Matrix<double> rz = new Matrix<double>(new double[4, 4]{
+                {1,0,  0  , 0},
+                { 0 ,1, 0, 0 },
+                {  0, 0,1, 0},
+                { 0, 0, 0, 1},
+            });
+            Matrix<double> trans = new Matrix<double>(new double[,]
+           {
+                {1,0,0,0 },
+                { 0,1,0,0},
+                { 0,0,1,500},
+                { 0,0,0,1}
+           });
+            Matrix<double> a2 = new Matrix<double>(new double[3, 4]{
+                {200, 0,     w/2      , 0},
+                { 0 ,200 , h/2, 0 },
+                {  0, 0,  1, 0 },
+
+            });
+            Matrix<double> r;
+
+            for (int i = 0; i < 500; i++)
+            {
+
+                alpha = (float)x * Math.PI / 180.0;
+                beta = (float)y * Math.PI / 180.0;
+                gamma = (float)z * Math.PI / 180.0;
+                rx[1, 1] = Math.Cos(alpha); rx[1, 2] = -Math.Sin(alpha); rx[2, 1] = Math.Sin(alpha);
+                rx[2, 2] = Math.Cos(alpha);
+                ry[0, 0] = Math.Cos(beta); ry[0, 2] = -Math.Sin(beta); ry[2, 0] = Math.Sin(beta);
+                ry[2, 2] = Math.Cos(beta);
+                rz[0, 0] = Math.Cos(gamma); rz[0, 1] = -Math.Sin(gamma); rz[1, 0] = Math.Sin(gamma);
+                rz[1, 1] = Math.Cos(gamma);
+
+                r = (ry * rz * rx);
+                Matrix<double> fin = a2 * (trans * (r * a1));
+
+
+                CvInvoke.WarpPerspective(img, res, fin, res.Size, Inter.Linear,Warp.Default,BorderType.Constant,new MCvScalar(0,1,153));
+                CvInvoke.Imshow("img", img);
+                CvInvoke.Imshow("res", res);
+
+                //  x += 10;
+                //  z += 10;
+                y += 3;
+
+                CvInvoke.WaitKey(25);
+            }
+
+
+
+
+
+
+
+
+        }
+    }
+}
